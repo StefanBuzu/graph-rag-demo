@@ -1,0 +1,16 @@
+Speedy is an international delivery company that needs to refocus on which markets it
+should operate. Thus, Speedy's top management aims at improving their governance. To
+achieve this, the top management needs to get sales reports containing timely information.
+Thus, the top management decided to build a new reporting system to automatically
+produce such reports. After inspecting the sales reports, the top management also needs
+to query the existing information system to get detailed sales and HR information.
+
+The existing information system consists in two ERP modules, responsible for managing
+sales and HR information, respectively. Both modules run over Microsoft Dynamics 365
+in the cloud and are accessible through a web-based user interface and a REST API.
+
+The new reporting system will consist in three components responsible for extracting sales
+data from the ERP module, managing analysis data, and generating sales reports. All
+three components will be implemented as Java applications running on the same
+Linux server, and they will be supported by Oracle Database running on a separate
+Linux server. The corporate LAN is segregated from the public Internet by a firewall.
