@@ -1,70 +1,57 @@
 # Graph RAG Demo
 
-A GraphRAG implementation using Neo4j Aura, Claude API, and C# — deployed on Render.
+A GraphRAG demo that turns a plain text document into a queryable knowledge graph, using **Neo4j** as the graph database and **Claude** as the AI layer.
 
-## Architecture
+**Live demo:** https://graph-rag-demo-u4rr.onrender.com
+
+---
+
+## How it works
+
+### 1. Ingestion
+When code is pushed to `master`, a GitHub Actions workflow reads `documents/speedy.txt` and sends it to Claude. Claude extracts all entities (companies, systems, roles, infrastructure) and the relationships between them, returning structured JSON. That JSON is then written into Neo4j Aura as a knowledge graph.
+
+### 2. Asking a question
+When a user asks a question in the chat UI, the following happens:
 
 ```
-Browser (Render Static Site)
-        │
-        │  POST /api/ask  /  GET /api/report
-        ▼
-C# Web API (Render Web Service)
-        │                  │
-   Neo4j Aura         Claude API
-  (knowledge graph)   (Sonnet 4.6)
+User question
+      │
+      ▼
+Claude generates a Cypher query
+      │
+      ▼
+Cypher query runs against Neo4j
+      │
+      ▼
+Graph data returned
+      │
+      ▼
+Claude answers the question using that data
+      │
+      ▼
+Answer displayed in the UI
 ```
 
-On every push to `master`, GitHub Actions ingests `documents/speedy.txt` into Neo4j Aura and generates a fresh governance report.
+### 3. Governance report
+The user can also request a governance report. The app runs three targeted Cypher queries to collect systems, roles, and infrastructure data, then sends it all to Claude to generate a structured report.
 
-## Deployment
+---
 
-### 1. Neo4j Aura
-Sign up at [console.neo4j.io](https://console.neo4j.io) and create a free instance. Note the connection URI, username, and password.
+## The Knowledge Graph
 
-### 2. GitHub Secrets
-In your repo → Settings → Secrets → Actions, add:
+This is how the extracted data looks inside Neo4j after ingestion:
 
-| Secret | Value |
-|--------|-------|
-| `ANTHROPIC_API_KEY` | Your Anthropic API key |
-| `NEO4J_URI` | e.g. `neo4j+s://xxxxxxxx.databases.neo4j.io` |
-| `NEO4J_USER` | `neo4j` |
-| `NEO4J_PASSWORD` | Your Aura password |
+![Neo4j Knowledge Graph](docs/Screenshot%202026-06-08%20192649.png)
 
-### 3. Render — Static Site (frontend)
-- Connect this repo, set **Publish Directory** to `docs`
-- No build command needed
+Each node is an entity extracted from the document (company, system, component, infrastructure). The edges are the relationships between them.
 
-### 4. Render — Web Service (backend)
-- Connect this repo, Render detects the `Dockerfile` automatically
-- Add the same 4 env vars from step 2
-- Once live, copy the service URL
+---
 
-### 5. Wire them up
-Paste the Web Service URL into the **Backend URL** field on the static site.
+## Tech stack
 
-## Running locally
-
-```powershell
-# Start Neo4j
-docker run -d --name neo4j -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/testpassword neo4j:5
-
-$env:ANTHROPIC_API_KEY = "your-key"
-
-# Ingest document into Neo4j
-dotnet run -- --ingest
-
-# Interactive console (RAG Q&A + report)
-dotnet run
-
-# Run as web API on localhost:8080
-dotnet run -- --serve
-```
-
-## Sample questions
-
-- What systems does Speedy use?
-- What infrastructure does Speedy run on?
-- Who manages the ERP modules?
-- What is accessible via REST API?
+- **C# / .NET 10** — backend API and ingestion logic
+- **Neo4j Aura** — cloud graph database
+- **Claude Sonnet 4.6** — entity extraction, Cypher generation, question answering
+- **GitHub Actions** — automated ingestion and report generation on every push
+- **Render** — hosts both the frontend (static site) and backend (Docker)
