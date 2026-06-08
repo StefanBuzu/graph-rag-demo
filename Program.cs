@@ -101,8 +101,6 @@ while (true)
 
 await neo4jDriver.DisposeAsync();
 
-record QuestionRequest(string Question);
-
 // ── Ingestion ────────────────────────────────────────────────────────────────
 
 static async Task IngestDocument(AnthropicClient client, IDriver driver)
@@ -321,3 +319,5 @@ static async Task<string> AnswerQuestion(AnthropicClient client, string question
 
     return response.Content.OfType<TextContent>().First().Text.Trim();
 }
+
+record QuestionRequest(string Question);

@@ -1,41 +1,70 @@
 # Graph RAG Demo
 
-A simple GraphRAG implementation using Neo4j and the Claude API, built in C#.
+A GraphRAG implementation using Neo4j Aura, Claude API, and C# — deployed on Render.
 
-## What it does
+## Architecture
 
-Demonstrates the GraphRAG pattern — using a knowledge graph as the retrieval source for an LLM:
-
-1. You ask a question in natural language
-2. Claude converts it to a Cypher query
-3. The query runs against a Neo4j graph database
-4. Claude answers your question using the retrieved graph data
-
-## Prerequisites
-
-- [.NET 10](https://dotnet.microsoft.com/download)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop)
-- An [Anthropic API key](https://console.anthropic.com)
-
-## Setup
-
-**1. Start Neo4j in Docker:**
-```bash
-docker run -d --name neo4j-test -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/testpassword neo4j:5
+```
+Browser (Render Static Site)
+        │
+        │  POST /api/ask  /  GET /api/report
+        ▼
+C# Web API (Render Web Service)
+        │                  │
+   Neo4j Aura         Claude API
+  (knowledge graph)   (Sonnet 4.6)
 ```
 
-**2. Set your API key:**
-```powershell
-$env:ANTHROPIC_API_KEY = "your-key-here"
-```
+On every push to `master`, GitHub Actions ingests `documents/speedy.txt` into Neo4j Aura and generates a fresh governance report.
 
-**3. Run the app:**
+## Deployment
+
+### 1. Neo4j Aura
+Sign up at [console.neo4j.io](https://console.neo4j.io) and create a free instance. Note the connection URI, username, and password.
+
+### 2. GitHub Secrets
+In your repo → Settings → Secrets → Actions, add:
+
+| Secret | Value |
+|--------|-------|
+| `ANTHROPIC_API_KEY` | Your Anthropic API key |
+| `NEO4J_URI` | e.g. `neo4j+s://xxxxxxxx.databases.neo4j.io` |
+| `NEO4J_USER` | `neo4j` |
+| `NEO4J_PASSWORD` | Your Aura password |
+
+### 3. Render — Static Site (frontend)
+- Connect this repo, set **Publish Directory** to `docs`
+- No build command needed
+
+### 4. Render — Web Service (backend)
+- Connect this repo, Render detects the `Dockerfile` automatically
+- Add the same 4 env vars from step 2
+- Once live, copy the service URL
+
+### 5. Wire them up
+Paste the Web Service URL into the **Backend URL** field on the static site.
+
+## Running locally
+
 ```powershell
+# Start Neo4j
+docker run -d --name neo4j -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/testpassword neo4j:5
+
+$env:ANTHROPIC_API_KEY = "your-key"
+
+# Ingest document into Neo4j
+dotnet run -- --ingest
+
+# Interactive console (RAG Q&A + report)
 dotnet run
+
+# Run as web API on localhost:8080
+dotnet run -- --serve
 ```
 
-## Sample questions to try
+## Sample questions
 
-- Who are Alice's friends?
-- Who does Alice work with?
-- How is Bob connected to Dave?
+- What systems does Speedy use?
+- What infrastructure does Speedy run on?
+- Who manages the ERP modules?
+- What is accessible via REST API?
