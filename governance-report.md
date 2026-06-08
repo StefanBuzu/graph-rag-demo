@@ -1,104 +1,108 @@
-# Governance Report: Speedy IT Systems Landscape
+# Governance Report: Speedy – Systems & Infrastructure Overview
 
 **Prepared for:** Top Management
+**Prepared by:** Governance Consulting
 **Classification:** Internal – Confidential
-**Scope:** Enterprise Systems, Infrastructure & Risk Assessment
 
 ---
 
 ## 1. Executive Summary
 
-This report provides a structured overview of Speedy's current IT systems landscape as used and managed by Top Management. The organisation operates two primary platforms — a **Reporting System** and an **Existing Information System** — both of which are critical to day-to-day operations and strategic decision-making.
-
-The overall architecture is functional and reasonably structured, with clear separation of concerns between data extraction, analysis, and reporting. However, the assessment identifies **notable concentration risks**, **single points of failure**, and **areas where governance controls should be strengthened** to ensure resilience, security, and long-term sustainability.
+This report provides a structured overview of the key information systems, infrastructure components, and associated governance risks relevant to Speedy's operating environment. Top Management currently relies on two primary systems — the **Reporting System** and the **Existing Information System** — to manage business operations and decision-making. While the architecture is functional and reasonably structured, this review identifies several **critical single points of failure, technology concentration risks, and network security considerations** that warrant immediate management attention. A set of prioritised recommendations is provided to strengthen resilience, security, and governance oversight.
 
 ---
 
 ## 2. Key Systems Overview
 
 ### 2.1 Reporting System
-The Reporting System supports Top Management's analytical and decision-making needs. It comprises three core components:
+The Reporting System serves as the primary analytical and decision-support tool for Top Management. It comprises three tightly integrated components:
 
 | Component | Technology | Infrastructure |
 |---|---|---|
-| Sales Data Extractor | Java | Linux Server (Application) |
-| Analysis Data Manager | Java | Linux Server (Application) |
-| Sales Report Generator | Java | Linux Server (Application) |
-| Reporting Database | Oracle Database | Linux Server (Database) |
+| Data Extraction Component | Java | Linux Server (Application) |
+| Analysis Data Component | Java | Linux Server (Application) |
+| Report Generation Component | Java | Linux Server (Application) |
+| Underlying Database | Oracle Database | Linux Server (Database) |
 
-The system extracts sales data directly from the Sales ERP Module and processes it through an analytical pipeline, culminating in report generation for Top Management consumption.
+All three processing components share a **single Linux Application Server** and depend on a **single Oracle Database instance** hosted on a dedicated Linux Database Server. Data is sourced directly from the Sales ERP Module within the Existing Information System.
+
+---
 
 ### 2.2 Existing Information System
-The Existing Information System serves as the operational backbone, hosting both Sales and HR business processes:
+The Existing Information System supports core business operations through two ERP modules, both running on **Microsoft Dynamics 365**:
 
-| Component | Platform | Access Methods |
+| Module | Platform | Access Methods |
 |---|---|---|
 | Sales ERP Module | Microsoft Dynamics 365 | Web-Based UI, REST API |
 | HR ERP Module | Microsoft Dynamics 365 | Web-Based UI, REST API |
 
-The system is accessible via a **Web-Based User Interface** for end users and a **REST API** for programmatic integration, enabling connectivity with the Reporting System.
+The system is accessible via a **Web-Based User Interface** for end users and a **REST API** for system integrations, providing flexibility but also broadening the potential attack surface.
+
+---
 
 ### 2.3 Network & Security Infrastructure
-A **Firewall** is in place to separate the **Corporate LAN** from the **Public Internet**, providing a fundamental perimeter security boundary. All application and database workloads reside on dedicated Linux servers within the corporate environment.
+A **Firewall** is in place to separate the **Corporate LAN** from the **Public Internet**, representing the primary boundary defence. No additional network segmentation layers are documented in the current knowledge graph.
 
 ---
 
 ## 3. Dependencies & Risks
 
-### 3.1 Critical Dependencies
+### 3.1 Critical Single Points of Failure
 
-```
-Top Management
-    ├── Reporting System ──────────────────────────────┐
-    │       ├── Sales Data Extractor (Java)            │
-    │       │       └── EXTRACTS FROM: Sales ERP ──────┤
-    │       ├── Analysis Data Manager (Java)           │
-    │       └── Sales Report Generator (Java)          │
-    │               └── Oracle Database                │
-    │                       └── Linux Server (DB)      │
-    └── Existing Information System                    │
-            ├── Sales ERP Module (Dynamics 365) ───────┘
-            └── HR ERP Module (Dynamics 365)
-```
+> ⚠️ **HIGH RISK**
 
-### 3.2 Risk Register
+- **Linux Server (Application):** All three components of the Reporting System — Data Extraction, Analysis, and Report Generation — run on a single application server. Any unplanned outage, hardware failure, or security incident on this server would result in a **complete loss of reporting capability** for Top Management.
+- **Oracle Database / Linux Server (Database):** The entire Reporting System depends on one database instance. There is no evidence of replication, clustering, or failover configuration in the current architecture.
+- **Microsoft Dynamics 365:** Both the Sales and HR ERP modules share the same platform. A licensing issue, service outage, or platform-level failure would simultaneously impact both business-critical functions.
 
-| # | Risk Area | Description | Severity | Likelihood |
-|---|---|---|---|---|
-| R1 | **Single Platform Dependency** | Both ERP modules (Sales & HR) run exclusively on Microsoft Dynamics 365. A platform outage, licensing change, or vendor issue would simultaneously disrupt both modules. | High | Medium |
-| R2 | **Single Server Concentration** | All three Reporting System components (Extractor, Analyser, Generator) run on the same Linux Application Server. A hardware or OS failure would take down the entire reporting pipeline. | High | Medium |
-| R3 | **Database Single Point of Failure** | The Oracle Database operates on a single Linux Database Server with no redundancy referenced in the architecture. Loss of this server means total loss of reporting capability. | High | Medium |
-| R4 | **Homogeneous Technology Stack** | All reporting components are built in Java. A critical Java vulnerability (e.g., a zero-day exploit) could simultaneously compromise all three components. | Medium | Low |
-| R5 | **REST API Exposure Risk** | The Existing Information System is accessible via a REST API, which, if insufficiently secured, may expose sensitive Sales and HR data to unauthorised access or injection attacks. | High | Medium |
-| R6 | **Firewall as Sole Perimeter Control** | The architecture references a single Firewall as the boundary between the Corporate LAN and the Public Internet. There is no mention of additional controls (e.g., DMZ, IDS/IPS, MFA). | High | Medium |
-| R7 | **Data Pipeline Integrity** | The direct extraction relationship between the Sales Data Extractor and the Sales ERP Module introduces risk of data inconsistency or corruption if extraction processes are not properly governed. | Medium | Medium |
-| R8 | **Limited Role Segregation Visibility** | Only Top Management roles are defined in the current governance model. There is no visibility of access controls, role-based permissions, or audit trails for other system users. | Medium | High |
+---
+
+### 3.2 Technology Concentration Risk
+
+> ⚠️ **MEDIUM–HIGH RISK**
+
+- All reporting logic is implemented in **Java** across three separate components. While this provides consistency, it means a critical Java vulnerability (e.g., a zero-day exploit) could compromise the entire reporting pipeline simultaneously.
+- **Microsoft Dynamics 365** represents a single-vendor dependency for all ERP functionality. Changes in licensing, support terms, or service availability directly impact core operations with limited short-term alternatives.
+
+---
+
+### 3.3 Network Security & Exposure
+
+> ⚠️ **MEDIUM RISK**
+
+- The **REST API** exposed by the Existing Information System provides programmatic access to both Sales and HR data. If insufficiently protected, this interface could be exploited by external or internal actors to extract sensitive business or personnel data.
+- The architecture documents **only a single firewall** as the network boundary control. There is no indication of additional controls such as a **DMZ, intrusion detection/prevention systems (IDS/IPS), or network segmentation** between systems of different sensitivity levels (e.g., HR data vs. Sales data).
+- The relationship between the Reporting System's Data Extraction Component and the Sales ERP Module represents a **cross-system data flow** that should be governed by formal data access controls and audit logging.
+
+---
+
+### 3.4 Governance & Accountability Gaps
+
+> ⚠️ **MEDIUM RISK**
+
+- Top Management is documented as both the **manager of Speedy** and a **direct user** of both key systems. While appropriate for oversight, this dual role suggests a potential lack of intermediate system ownership or delegated accountability for system governance, maintenance, and risk management.
+- No **data owners, system custodians, or operational roles** are defined below the Top Management level in the current knowledge graph, creating an accountability gap for day-to-day system governance.
 
 ---
 
 ## 4. Recommendations
 
-### Priority 1 — Immediate Actions (0–3 Months)
-
-**R1 – ERP Platform Resilience**
-Ensure a formal **Business Continuity Plan (BCP)** and **Disaster Recovery (DR)** agreement is in place with Microsoft for Dynamics 365. Evaluate whether a fallback or data export mechanism exists in the event of platform unavailability.
-
-**R3 & R2 – Eliminate Single Points of Failure**
-Commission an infrastructure review to implement:
-- **Server redundancy or clustering** for the Linux Application Server hosting reporting components.
-- **Database replication or backup** for the Oracle Database, with a tested recovery time objective (RTO) defined and documented.
-
-**R6 – Strengthen Perimeter Security**
-Conduct an immediate security architecture review to assess whether the single Firewall is sufficient. Consider implementing:
-- A **Demilitarised Zone (DMZ)** for API-facing services.
-- **Intrusion Detection/Prevention Systems (IDS/IPS)**.
-- **Multi-Factor Authentication (MFA)** for all management and ERP access.
+The following recommendations are prioritised by urgency and potential impact:
 
 ---
 
-### Priority 2 — Short-Term Actions (3–6 Months)
+### 🔴 Priority 1 – Address Single Points of Failure *(Immediate)*
 
-**R5 – Secure the REST API**
-Commission a formal **API security audit**, ensuring:
-- All endpoints are authenticated and authorised using current standards (e.g., OAuth 2.0).
-- Rate limiting and logging are enfor
+1. **Implement High Availability for the Linux Application Server.** Deploy a load-balanced or clustered application server environment to eliminate the single point of failure for all Reporting System components. Consider containerisation (e.g., Docker/Kubernetes) for improved resilience and deployment flexibility.
+
+2. **Establish Oracle Database Redundancy.** Implement Oracle Data Guard or an equivalent replication/failover solution for the database server. Define and test a Recovery Time Objective (RTO) and Recovery Point Objective (RPO) appropriate to management reporting needs.
+
+3. **Define a Business Continuity Plan (BCP) for Microsoft Dynamics 365.** Document and test contingency procedures in the event of an extended Dynamics 365 outage, including manual fallback processes for Sales and HR operations.
+
+---
+
+### 🟠 Priority 2 – Strengthen Network Security *(Short-term: 1–3 months)*
+
+4. **Conduct a REST API Security Audit.** Review authentication mechanisms (e.g., OAuth 2.0), rate limiting, and access controls on the REST API. Ensure all API access is logged and monitored, particularly for HR data access which may carry regulatory obligations (e.g., GDPR).
+
+5. **Introduce Network Segmentation.** Implement a DMZ or tiered network architecture to isolate the Reporting
