@@ -18,6 +18,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Inject backend URL into frontend
+        run: sed -i 's|__BACKEND_URL__|${{ secrets.BACKEND_URL }}|g' docs/index.html
+
       - name: Restore dependencies
         run: dotnet restore
 
@@ -37,9 +40,9 @@ jobs:
           NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
         run: dotnet run -- --report
 
-      - name: Commit governance report
+      - name: Commit updated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add governance-report.md
-          git diff --staged --quiet || (git commit -m "chore: update governance report [skip ci]" && git push)
+          git add governance-report.md docs/index.html
+          git diff --staged --quiet || (git commit -m "chore: update report and inject backend URL [skip ci]" && git push)
